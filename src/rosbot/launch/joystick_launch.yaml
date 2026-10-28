@@ -1,0 +1,7 @@
+%YAML 1.2
+---
+launch:
+  - node:
+      pkg: "example_pkg"
+      exec: "example_node"
+      name: "example"
