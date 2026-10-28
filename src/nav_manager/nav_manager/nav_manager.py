@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionClient
+from enum import Enum
+from nav2_msgs.action import NavigateToPose
+
+# An enum allows you to use words instead of arbitrary
+# numbers to represent your states
+class State(Enum):
+    INIT = 1
+    NAVIGATE = 2
+    PICK = 3
+    PLACE = 4
+    # You can add other states to represent other behaviors
+    DONE = 5 # Temporarily added NEXT as a state
+
+class NavManager(Node):
+    def __init__(self):
+        super().__init__('nav_manager')
+        self.state = State.INIT # Initialize internal variable to represent state
+
+        # The timer calls the timer_callback function 10 times a second.
+        self.timer = self.create_timer(0.1, self.timer_callback)
+        # Add subscribers, publishers, action clients, etc. in __init__
+        self.navigation_action_client = ActionClient(self, NavigateToPose,'/navigate_to_pose')
+        # Can also declare some variables as parameters that can be called
+        # from a launch file or the command line
+        self.declare_parameter('goal_position', [0.0, 0.0, 0.0])
+        self.declare_parameter('block_position', [0.2, 0.0, 0.0])
+
+        goal_pos = self.get_parameter('goal_position').value
+        block_pos = self.get_parameter('block_position').value
+
+        # Keep track of whether bot is currently busy
+        self.BUSY = False
+
+        # Can use this finished variable to end the node once it is done
+        self.finished = False
+
+    # The timer callback handles all logic of what to do when
+    def timer_callback(self):
+        # Set state to BUSY while something is happening
+        if self.BUSY:
+            # If currently BUSY, do nothing
+            return
+
+        # Could just initialize your state to NAVIGATE
+        # but this demonstrates state switching
+        elif self.state is State.INIT:
+            self.state = State.NAVIGATE
+            self.BUSY = False
+
+        elif self.state is State.NAVIGATE:
+            self.send_nav_goal()
+            self.BUSY = True
+
+        elif self.state is State.DONE:
+            # Mark as finished and quit code
+            self.finished = True
+
+        # Include any other states in here that you wish
+        # Timer callback should just handle switching between
+        # other functionality
+
+    def send_nav_goal(self):
+        # Send goal to navigation action server in this function
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose.header.frame_id = 'map'
+        goal_msg.pose.header.stamp = self.get_clock().now().to_msg()
+        goal_msg.pose.pose.position.x =  1.0
+        goal_msg.pose.pose.position.y =  2.0
+        goal_msg.pose.pose.orientation.w = 1.0
+
+        self.navigation_action_client.wait_for_server()
+        future = self.navigation_action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        return future
+        # After navigation to target, set the state to whatever comes next
+        # Manager may not be done after sending nav goal 
+        self.state = State.DONE
+    def feedback_callback(self):
+        return None
+
+def main():
+    rclpy.init()
+    node = NavManager()
+    while rclpy.ok() and not node.finished:
+        rclpy.spin_once(node, timeout_sec=0.1)
+    rclpy.shutdown()
