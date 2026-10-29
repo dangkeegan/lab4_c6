@@ -32,7 +32,7 @@ def generate_launch_description():
     # TODO: Launch dabai_dcw.launch.py from orbbec camera
     # This is the same as running
     # `ros2 launch example_pkg example_launch.py`
-    dabai_dcw_launch = IncludeLaunchDescription(
+    orbbec_launch = IncludeLaunchDescription(
         
         PythonLaunchDescriptionSource(
             os.path.join(orbbec_pkg_path, 'launch/dabai_dcw.launch.py')),
@@ -65,9 +65,9 @@ def generate_launch_description():
     # a list of all of the nodes, launch files, etc.
     return launch.LaunchDescription([
         sllidar_node,
-        dabai_dcw_launch,
-        laser_filter_node,
-        rviz_node
+        orbbec_launch,
+        laser_filter_node #,
+        # rviz_node
     ])
 
 
