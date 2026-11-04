@@ -2,7 +2,6 @@ import rclpy
 from rclpy.node import Node
 from ros_robot_controller.ros_robot_controller_sdk import Board
 from rosbot_msgs.msg import ForwardPositions, GripperControl
-from rosbot_msgs.srv import InverseKinematics
 
 
 class ArmControl(Node):
@@ -28,7 +27,7 @@ class ArmControl(Node):
 
 
     def gripper_control_callback(self, msg):
-        if msg.pulse < 650 and msg.pulse > 0
+        if msg.pulse <= 650 and msg.pulse >= 0: # Check bounds of pulse
             self.board.bus_servo_set_position(self.duration, [ 10, msg.pulse] )
 
     # TODO: Write an arm_control node to receive joint angles

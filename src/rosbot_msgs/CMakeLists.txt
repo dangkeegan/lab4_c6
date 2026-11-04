@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/InverseMessage.msg"
   "msg/BlockDetection.msg"
   "srv/InverseKinematics.srv"
+  "action/ArmAction.action"
   DEPENDENCIES std_msgs
   DEPENDENCIES geometry_msgs
   # TODO

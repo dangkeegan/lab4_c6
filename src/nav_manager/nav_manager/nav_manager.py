@@ -75,6 +75,7 @@ class NavManager(Node):
 
         self.navigation_action_client.wait_for_server()
         future = self.navigation_action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        
         return future
         # After navigation to target, set the state to whatever comes next
         # Manager may not be done after sending nav goal 
