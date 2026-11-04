@@ -9,7 +9,9 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     # Find the location of the package on your computer
     rosbot_pkg_path = get_package_share_directory('rosbot')
-    rosbot_nav_pkg_path = get_package_share_directory('rosbot_nav')
+    rosbot_rosbot_nav_pkg_path = get_package_share_directory('rosbot_nav')
+    rosbot_nav_pkg_path = get_package_share_directory('nav2_bringup')
+
 
 
     # Launch another launch file.
@@ -21,7 +23,7 @@ def generate_launch_description():
     )
     nav_rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(rosbot_nav_pkg_path, 'launch', 'rviz_launch.py')),
+            os.path.join(rosbot_rosbot_nav_pkg_path, 'launch', 'rviz_launch.py')),
     )
     nav_launch = IncludeLaunchDescription(    
         PythonLaunchDescriptionSource(
@@ -32,8 +34,8 @@ def generate_launch_description():
     # a list of all of the nodes, launch files, etc.
     return launch.LaunchDescription([
         sensors_launch,
-        nav_rviz_launch,
-        nav_launch
+        nav_launch,
+        nav_rviz_launch
     ])
 
 

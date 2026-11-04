@@ -4,12 +4,12 @@ from rclpy.action import ActionServer, GoalResponse, CancelResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 import time
+from time import sleep
 
 
 from rosbot_msgs.msg import InverseMessage, ForwardPositions, GripperControl
-from rosbo_msgs.action import ArmAction
+from rosbot_msgs.action import ArmAction
 import numpy as np
-
 
 ##  Joint Links ##
 # l0 refers to the height of the arm base wrt base_link
@@ -38,39 +38,21 @@ pulse_range = [0,1000]
 arm_stow_msg = InverseMessage()
 arm_stow_msg.x = 0.1
 arm_stow_msg.y = 0.0
-arm_stow_msg.z = 0.24
+arm_stow_msg.z = 0.2
 arm_stow_msg.roll = 0.0
-arm_stow_msg.pitch = -45.0
-
-# Pick Position TODO: change values
-arm_pick_msg = InverseMessage()
-arm_pick_msg.x = 0.1
-arm_pick_msg.y = 0.0
-arm_pick_msg.z = 0.24
-arm_pick_msg.roll = 0.0
-arm_pick_msg.pitch = -45.0
-
-# Place Position TODO: change values
-arm_place_msg = InverseMessage()
-arm_place_msg.x = 0.1
-arm_place_msg.y = 0.0
-arm_place_msg.z = 0.24
-arm_place_msg.roll = 0.0
-arm_place_msg.pitch = -45.0
+arm_stow_msg.pitch = -60.0
 
 # Gripper Close
 gripper_close_msg = GripperControl()
-gripper_close_msg.pulse = 650
-
-# Gripper Close
-gripper_close_msg = GripperControl()
-gripper_close_msg.pulse = 650
+gripper_close_msg.pulse = 500
 
 # Gripper Open
-gripper_Open_msg = GripperControl()
-gripper_Open_msg.pulse = 650
+gripper_open_msg = GripperControl()
+gripper_open_msg.pulse = 100
 
 # TODO: Write helper scripts to convert from one to the other.
+
+
 
 def angle_to_pulse(angles):
     # TODO
@@ -98,13 +80,7 @@ class IKNode(Node):
                                  goal_callback=self.goal_callback,
                                  cancel_callback=self.cancel_callback,
                                  callback_group=group)
-        self.stow()
-
-    def stow(self):
-        self.gripper_pub.publish(gripper_close_msg)
-        time.sleep(1)
-        self.inverse_kinematics_callback(arm_stow_msg)
-        
+        self.get_logger().info('Server Running')
 
     def inverse_kinematics_callback(self, msg):
         try:
@@ -143,7 +119,7 @@ class IKNode(Node):
                     self.get_logger().error(f"Joint {forward_msg.id[i]} is out of bounds") # Someone please change this to print what the index and pulse, IDK how
                     in_bounds = False
             if in_bounds:
-                self.get_logger().info('Success')
+                self.get_logger().info(f"Forwarded")
                 self.forward_pub.publish(forward_msg)
         except:
             self.get_logger().error(f"Error")
@@ -151,8 +127,10 @@ class IKNode(Node):
     # Copied from demo code
     def goal_callback(self, goal_request):
         # OPTIONAL but good practice: Accept or reject a client request to begin an action
-        x = goal_request.target.x
-        y = goal_request.target.y
+        return GoalResponse.ACCEPT
+        x = goal_request.x
+        y = goal_request.y
+        z = goal_request.z
         self.get_logger().info(f'Received goal request, ({x},{y})')
         if (x > 11 or y > 11 or x < 0 or y < 0):
             self.get_logger().warn('Target (x, y) should be between 0 and 11')
@@ -164,43 +142,40 @@ class IKNode(Node):
         self.get_logger().info('Received cancel request')
         return CancelResponse.ACCEPT
     
-    def action_callback(self):
-        target = goal_handle.request.target
+    def action_callback(self, goal_msg):
         
-        start_time = self.get_clock().now().nanoseconds
-        run_time = (self.get_clock().now().nanoseconds - start_time)*1e-9
+        arm_goal = InverseMessage()
+        arm_goal.x = goal_msg.request.x
+        arm_goal.y = goal_msg.request.y
+        arm_goal.z = goal_msg.request.z
+        arm_goal.roll = 0.0
+        arm_goal.pitch = -90.0
+        self.get_logger().info(f'Received goal request, ({arm_goal.x},{arm_goal.y},{arm_goal.z})')
 
-        done = False
 
-        self.max_time = self.get_parameter("max_time").value
-        while (not done):
-            error = self.calc_error(target)
-            done = self.move(error)
+        if goal_msg.request.pick:
+            self.gripper_pub.publish(gripper_open_msg)
+            sleep(2)
+            self.inverse_kinematics_callback(arm_goal)
+            sleep(2)
+            self.gripper_pub.publish(gripper_close_msg)
+            sleep(2)
+            self.inverse_kinematics_callback(arm_stow_msg)
+            sleep(2)
+        else:
+            self.inverse_kinematics_callback(arm_goal)
+            sleep(2)
+            self.gripper_pub.publish(gripper_open_msg)
+            sleep(2)
+            self.inverse_kinematics_callback(arm_stow_msg)
+            sleep(2)
 
-            feedback_msg = Waypoint.Feedback()
-            feedback_msg.distance = np.sqrt(error[0]**2+error[1]**2)
-            feedback_msg.angle = error[2]
-            goal_handle.publish_feedback(feedback_msg)
+        result_msg = ArmAction.result()
+        result_msg.status = True
 
-            time.sleep(0.05)
-            run_time = (self.get_clock().now().nanoseconds - start_time)*1e-9
-            if (run_time > self.max_time):
-                goal_handle.abort()
-                break
-            if (goal_handle.is_cancel_requested):
-                goal_handle.canceled()
-                cmd_msg = Twist()
-                cmd_msg.linear.x = 0.0
-                cmd_msg.angular.z = 0.0
-                self.vel_pub.publish(cmd_msg)
-                break
-            
-        if done:
-            goal_handle.succeed()
-        output_msg = Waypoint.Result()
-        output_msg.position.x = self.x
-        output_msg.position.y = self.y
-        return output_msg
+        return result_msg
+
+        
 
     # TODO: Write inverse kinematics node
     
@@ -209,7 +184,7 @@ def main():
     rclpy.init()
     ik_node = IKNode()
     executor = MultiThreadedExecutor()
-    rclpy.spin(ik_node, executor=executor)
+    rclpy.spin(ik_node, executor = executor)
     ik_node.destroy_node()
     rclpy.shutdown()
 
