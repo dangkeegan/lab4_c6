@@ -170,7 +170,7 @@ class IKNode(Node):
             self.inverse_kinematics_callback(arm_stow_msg)
             sleep(2)
 
-        result_msg = ArmAction.result()
+        result_msg = ArmAction.Result()
         result_msg.status = True
 
         return result_msg

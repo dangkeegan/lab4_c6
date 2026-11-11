@@ -29,7 +29,7 @@ class NavManager(Node):
         self.arm_action_client = ActionClient(self, ArmAction, 'arm_action_topic')
         # Can also declare some variables as parameters that can be called
         # from a launch file or the command line
-        self.declare_parameter('goal_position', [0.0, 0.0, 0.0])
+        self.declare_parameter('goal_position', [3.894, -13.830, 0.115])
         self.declare_parameter('block_position', [0.2, 0.0, 0.02])
 
         self.goal_pos = self.get_parameter('goal_position').value
@@ -80,6 +80,7 @@ class NavManager(Node):
 
     def result_callback(self,result):
         self.BUSY = False
+        return
 
     def send_arm_goal(self, pick):
         self.get_logger().info(f'State: {self.state}')
@@ -132,6 +133,7 @@ class NavManager(Node):
         self.get_logger().info('Waiting for Server')
         self.navigation_action_client.wait_for_server()
         future = self.navigation_action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        self.get_logger().info(f'Sent Navigation request')
         future.add_done_callback(self.goal_response_callback)
         self.state = State.PLACE
         
@@ -139,7 +141,7 @@ class NavManager(Node):
         # After navigation to target, set the state to whatever comes next
         # Manager may not be done after sending nav goal 
         
-    def feedback_callback(self):
+    def feedback_callback(self, msg):
         return None
 
 def main():

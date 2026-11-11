@@ -3,7 +3,7 @@ from ament_index_python.packages import get_package_share_directory
 
 import launch
 import launch_ros.actions
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
@@ -28,19 +28,18 @@ def generate_launch_description():
     )
     nav_launch = IncludeLaunchDescription(    
         PythonLaunchDescriptionSource(
-            os.path.join(rosbot_nav_pkg_path, 'launch', 'bringup_launch.py')),
+            os.path.join(rosbot_rosbot_nav_pkg_path, 'launch', 'bringup_launch.py')),
     )
     arm_launch = IncludeLaunchDescription(    
         PythonLaunchDescriptionSource(
             os.path.join(rosbot_arm_pkg_path, 'launch', 'arm_launch.py')),
     )
+    delayed_rviz = TimerAction(period=10.0, actions=[nav_rviz_launch])
     # Your final returned LaunchDescription includes 
     # a list of all of the nodes, launch files, etc.
     return launch.LaunchDescription([
         sensors_launch,
-        nav_launch,
-        nav_rviz_launch,
-        arm_launch
+        arm_launch,
     ])
 
 
