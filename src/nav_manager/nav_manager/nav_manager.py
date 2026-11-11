@@ -119,9 +119,6 @@ class NavManager(Node):
         # What do we do when we get the results? result_callback 
         result_future.add_done_callback(self.result_callback)
 
-    def result_callback(self, future):
-        self.BUSY = False
-
     def send_nav_goal(self):
         self.get_logger().info(f'State: {self.state}')
         # Send goal to navigation action server in this function

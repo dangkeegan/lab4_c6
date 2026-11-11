@@ -11,6 +11,7 @@ def generate_launch_description():
     rosbot_pkg_path = get_package_share_directory('rosbot')
     rosbot_rosbot_nav_pkg_path = get_package_share_directory('rosbot_nav')
     rosbot_nav_pkg_path = get_package_share_directory('nav2_bringup')
+    rosbot_arm_pkg_path = get_package_share_directory('rosbot_arm')
 
 
 
@@ -29,13 +30,17 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(rosbot_nav_pkg_path, 'launch', 'bringup_launch.py')),
     )
-
+    arm_launch = IncludeLaunchDescription(    
+        PythonLaunchDescriptionSource(
+            os.path.join(rosbot_arm_pkg_path, 'launch', 'arm_launch.py')),
+    )
     # Your final returned LaunchDescription includes 
     # a list of all of the nodes, launch files, etc.
     return launch.LaunchDescription([
         sensors_launch,
         nav_launch,
-        nav_rviz_launch
+        nav_rviz_launch,
+        arm_launch
     ])
 
 
